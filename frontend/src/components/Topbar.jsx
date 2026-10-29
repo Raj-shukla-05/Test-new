@@ -1,12 +1,22 @@
 import React from 'react';
 import { Bell, ChevronDown, HelpCircle, LogOut, Search } from 'lucide-react';
 
-export default function Topbar({ role, setRole, onLogout, userName }) {
+export default function Topbar({ role, setRole, onLogout, userName, systemStatus }) {
+  const isMongoConnected = systemStatus?.database === 'connected';
+  const isInMemory = systemStatus?.database === 'in-memory';
+
   return (
     <header className="topbar">
       <div className="topbar-title">
         <span className="eyebrow">Home recovery monitoring</span>
-        <div className="live-chip"><span /> System operational</div>
+        <div
+          className={`live-chip ${isInMemory ? 'warning' : ''}`}
+          style={isInMemory ? { background: 'rgba(234, 179, 8, 0.12)', borderColor: 'rgba(234, 179, 8, 0.3)', color: '#eab308' } : undefined}
+          title={isMongoConnected ? 'All sessions are permanently persisted in MongoDB' : 'Running in resilient session mode; data held in memory'}
+        >
+          <span style={isInMemory ? { background: '#eab308' } : undefined} />
+          {isMongoConnected ? 'System operational · MongoDB connected' : (isInMemory ? 'Session mode · In-memory (DB offline)' : 'System operational')}
+        </div>
       </div>
       <div className="topbar-actions">
         <div className="search-box"><Search size={17} /><input placeholder="Search patients, sessions…" /></div>

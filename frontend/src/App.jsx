@@ -28,25 +28,39 @@ export default function App() {
   const [trends, setTrends] = useState(fallbackTrends);
   const [alerts, setAlerts] = useState(fallbackAlerts);
   const [patients, setPatients] = useState([]);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
+  const [systemStatus, setSystemStatus] = useState(null);
 
-  // Patients see their own data; caregivers keep viewing the seeded demo patient.
+  useEffect(() => {
+    api.health().then(setSystemStatus).catch(() => setSystemStatus({ database: 'offline' }));
+  }, []);
+
+  // Patients see their own data; caregivers and doctors manage patients
   const activeUserId = authUser?.role === 'patient' ? authUser.id : DEMO_USER_ID;
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const [dash, trend, alertData, patientData] = await Promise.all([
+      const promises = [
         api.dashboard(activeUserId),
         api.trends(activeUserId),
         api.alerts(activeUserId),
-        api.caregiverPatients(DEMO_CAREGIVER_ID),
-      ]);
-      setDashboard(dash);
-      setTrends(trend);
-      setAlerts(alertData);
-      setPatients(patientData);
+      ];
+
+      // Only query caregiver patients if the current user has the caregiver role
+      if (authUser?.role === 'caregiver') {
+        promises.push(api.caregiverPatients(authUser.id || DEMO_CAREGIVER_ID));
+      }
+
+      const results = await Promise.all(promises);
+      setDashboard(results[0]);
+      setTrends(results[1]);
+      setAlerts(results[2]);
+      if (results[3]) {
+        setPatients(results[3]);
+      }
     } catch {
       setDashboard(fallbackDashboard);
       setTrends(fallbackTrends);
@@ -57,33 +71,63 @@ export default function App() {
     }
   };
 
-  useEffect(() => { if (authUser) refresh(); }, [authUser]);
+  useEffect(() => {
+    if (authUser) refresh();
 
-  const handleLogin = (user) => {
-    try { sessionStorage.setItem(SESSION_KEY, JSON.stringify(user)); } catch { /* storage unavailable */ }
+    const handleUnauthorized = () => {
+      handleLogout();
+      setToast('Your session has expired. Please sign in again.');
+    };
+
+    window.addEventListener('neuroguard:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('neuroguard:unauthorized', handleUnauthorized);
+  }, [authUser]);
+
+  const handleLogin = (user, token) => {
+    try {
+      sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      if (token) api.setAuthToken(token);
+    } catch { /* storage unavailable */ }
     setRole(roleOf(user));
     setView(homeView(roleOf(user)));
     setAuthUser(user);
   };
 
   const handleLogout = () => {
-    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* storage unavailable */ }
+    try {
+      sessionStorage.removeItem(SESSION_KEY);
+      api.clearAuthToken();
+    } catch { /* storage unavailable */ }
     setAuthUser(null);
   };
 
-  const handleSave = async (result) => {
+  const handleSave = async (result, assignmentId, trackingQuality) => {
     try {
-      await api.createAssessment({
+      const saved = await api.createAssessment({
         userId: activeUserId,
         exerciseType: result.exercise,
         duration: result.duration,
         score: result.score,
         metrics: result.metrics,
+        assignmentId: assignmentId || null,
+        trackingQuality: trackingQuality || null,
       });
-      setToast('Session saved. NeuroGuard will compare it with your personal baseline.');
+
+      const storageNote = saved?.storage === 'mongodb'
+        ? ' (Saved to database)'
+        : saved?.storage === 'in-memory'
+          ? ' (Session mode · held in temporary memory)'
+          : '';
+
+      setToast(
+        assignmentId
+          ? `Session submitted against prescribed protocol.${storageNote}`
+          : `Session recorded.${storageNote} NeuroGuard will compare it with your personal baseline.`
+      );
+      setSelectedAssignment(null);
       await refresh();
-    } catch {
-      setToast('Session completed locally. Connect the backend to persist it.');
+    } catch (err) {
+      setToast(err.message || 'Session completed locally. Connect the backend to persist it.');
     }
     window.setTimeout(() => setToast(''), 4500);
   };
@@ -104,13 +148,34 @@ export default function App() {
   };
 
   const content = useMemo(() => {
-    if (view === 'assessment') return <AssessmentPage onSave={handleSave} onDone={() => setView('dashboard')} />;
+    if (view === 'assessment') {
+      return (
+        <AssessmentPage
+          assignment={selectedAssignment}
+          onClearAssignment={() => setSelectedAssignment(null)}
+          onSave={handleSave}
+          onDone={() => { setSelectedAssignment(null); setView('dashboard'); }}
+        />
+      );
+    }
     if (view === 'progress') return <ProgressPage trends={trends} />;
     if (view === 'doctor') return <DoctorPage doctor={authUser} />;
     if (view === 'caregiver') return <CaregiverPage trends={trends} patients={patients.length ? patients : undefined} onReview={() => setToast('Opening the trend evidence for review…')} />;
     if (view === 'settings') return <SettingsPage />;
-    return <PatientDashboard dashboard={dashboard} trends={trends} alerts={alerts} setView={setView} onReview={() => setView('progress')} />;
-  }, [view, dashboard, trends, alerts, patients, authUser]);
+    return (
+      <PatientDashboard
+        dashboard={dashboard}
+        trends={trends}
+        alerts={alerts}
+        setView={setView}
+        onReview={() => setView('progress')}
+        onStartAssignment={(asgn) => {
+          setSelectedAssignment(asgn);
+          setView('assessment');
+        }}
+      />
+    );
+  }, [view, dashboard, trends, alerts, patients, authUser, selectedAssignment]);
 
   if (!authUser) return <LoginPage onLogin={handleLogin} />;
 
@@ -118,7 +183,7 @@ export default function App() {
     <div className="app-shell">
       <Sidebar view={view} setView={setView} role={role} userName={authUser.name} onDemoDecline={handleDemoDecline} />
       <main className="main-shell">
-        <Topbar role={role} userName={authUser.name} onLogout={handleLogout} setRole={(nextRole) => { if (authUser.role === 'doctor') return; setRole(nextRole); setView(homeView(nextRole)); }} />
+        <Topbar role={role} userName={authUser.name} onLogout={handleLogout} systemStatus={systemStatus} setRole={(nextRole) => { if (authUser.role === 'doctor') return; setRole(nextRole); setView(homeView(nextRole)); }} />
         <div className="content-shell">
           {loading && view === 'dashboard' && <div className="loading-bar"><LoaderCircle size={15} className="spin" /> Syncing recovery data…</div>}
           {content}
