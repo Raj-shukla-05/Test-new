@@ -55,21 +55,39 @@ function buildDashboard(user, assessments) {
   const baseline = prior.length ? personalBaseline(prior, 'score', 5) : Number(latest?.score || 0);
   const current = Number(latest?.score || 0);
   const change = baseline ? (current - baseline) / baseline : 0;
-  const metric = (name, fallback) => {
-    const value = Number(latest?.metrics?.[name] ?? fallback);
-    const old = prior.length ? personalBaseline(prior, name, 5) : value;
-    return { value: Math.round(value), change: old ? Math.round(((value - old) / old) * 1000) / 10 : 0 };
+
+  // Only report a metric if the latest session actually recorded it (value is not undefined/null).
+  // prior.length === 0 means this is the first session and no meaningful change can be computed.
+  const metric = (name) => {
+    const raw = latest?.metrics?.[name];
+    if (raw === undefined || raw === null) return null; // metric was not measured in this session
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return null;
+    const old = prior.length ? personalBaseline(prior, name, 5) : null;
+    const change = (old !== null && old !== 0) ? Math.round(((value - old) / old) * 1000) / 10 : null;
+    return { value: Math.round(value), change, measured: true };
   };
+
   return {
     user,
-    summary: { functionalScore: Math.round(current), change: Math.round(change * 1000) / 10, trend: change >= 0.03 ? 'Improving' : change <= -0.05 ? 'Declining' : 'Stable', lastAssessment: latest?.timestamp || null },
-    metrics: {
-      Movement: metric('movement', latest?.score || 0),
-      Balance: metric('balance', latest?.score || 0),
-      Coordination: metric('coordination', latest?.score || 0),
-      Speech: metric('speech', 84),
+    summary: {
+      functionalScore: Math.round(current),
+      change: Math.round(change * 1000) / 10,
+      trend: change >= 0.03 ? 'Improving' : change <= -0.05 ? 'Declining' : 'Stable',
+      lastAssessment: latest?.timestamp || null,
+      exerciseType: latest?.exerciseType || null,
     },
-    baseline: { functionalScore: Math.round(baseline), window: Math.min(prior.length, 5) },
+    metrics: {
+      Movement: metric('movement'),
+      Balance: metric('balance'),
+      Coordination: metric('coordination'),
+      Speech: metric('speech'),
+    },
+    baseline: {
+      functionalScore: Math.round(baseline),
+      // window: number of sessions used to compute the baseline (0 = first session, no comparison)
+      window: Math.min(prior.length, 5),
+    },
   };
 }
 

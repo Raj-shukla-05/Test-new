@@ -85,3 +85,17 @@ nav { display: grid; gap: 4px; }
 .filter-chips{display:flex;flex-wrap:wrap;gap:6px}.filter-chips button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 11px;font-size:11px;font-weight:700;color:#4d5c60}.filter-chips button b{color:var(--muted);margin-left:3px}.filter-chips button.active{background:var(--teal);border-color:var(--teal);color:#fff}.filter-chips button.active b{color:#d6f1ee}
 .patient-row.selected{background:var(--teal-soft)}.empty-note{color:var(--muted);font-size:12px;margin:14px 0}
 @media (max-width:800px){.doctor-summary{grid-template-columns:1fr 1fr}}
+
+/* Assessment Assignment status badge styles */
+.status-badge.assigned{color:#2563eb;background:rgba(37,99,235,0.12)}
+.status-badge.assigned span{background:#2563eb}
+.status-badge.in_progress{color:#8b5cf6;background:rgba(139,92,246,0.12)}
+.status-badge.in_progress span{background:#8b5cf6}
+.status-badge.completed{color:#059669;background:rgba(5,150,105,0.12)}
+.status-badge.completed span{background:#059669}
+.status-badge.reviewed{color:#0d9488;background:rgba(13,148,136,0.15)}
+.status-badge.reviewed span{background:#0d9488}
+.status-badge.cancelled{color:#64748b;background:rgba(100,116,139,0.12)}
+.status-badge.cancelled span{background:#64748b}
+.status-badge.expired{color:#dc2626;background:rgba(220,38,38,0.12)}
+.status-badge.expired span{background:#dc2626}

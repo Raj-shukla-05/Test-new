@@ -35,10 +35,10 @@ export default function LoginPage({ onLogin }) {
     setBusy(true);
     setError('');
     try {
-      const { user } = signup && !creds
+      const { user, token } = signup && !creds
         ? await api.signup({ name: name.trim(), email: mail, password: pass, role })
         : await api.login(mail, pass);
-      onLogin(user);
+      onLogin(user, token);
     } catch (err) {
       if (err instanceof TypeError) setError('Cannot reach the server. Make sure the backend is running.');
       else setError(err.status === 401 ? 'Invalid email or password.' : err.message);
