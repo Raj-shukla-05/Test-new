@@ -65,7 +65,6 @@ export const api = {
   dashboard: (userId) => request(`/users/${userId}/dashboard`),
   assessments: (userId) => request(`/users/${userId}/assessments`),
   trends: (userId) => request(`/users/${userId}/trends`),
-  caregiverPatients: (caregiverId) => request(`/caregivers/${caregiverId}/patients`),
   doctorPatients: (doctorId) => request(`/doctors/${doctorId}/patients`),
   alerts: (userId) => request(`/alerts/${userId}`),
   patientAssignments: (patientId) => request(`/patients/${patientId}/assignments`),

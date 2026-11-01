@@ -5,16 +5,15 @@ import Topbar from './components/Topbar';
 import PatientDashboard from './pages/PatientDashboard';
 import ProgressPage from './pages/ProgressPage';
 import AssessmentPage from './pages/AssessmentPage';
-import CaregiverPage from './pages/CaregiverPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import DoctorPage from './pages/DoctorPage';
 import { api } from './lib/api';
-import { DEMO_CAREGIVER_ID, DEMO_USER_ID, fallbackAlerts, fallbackDashboard, fallbackTrends } from './lib/demoData';
+import { DEMO_USER_ID, fallbackAlerts, fallbackDashboard, fallbackTrends } from './lib/demoData';
 
 const SESSION_KEY = 'neuroguard.user';
-const homeView = (r) => (r === 'caregiver' ? 'caregiver' : r === 'doctor' ? 'doctor' : 'dashboard');
-const roleOf = (u) => (u?.role === 'caregiver' || u?.role === 'doctor' ? u.role : 'patient');
+const homeView = (r) => (r === 'doctor' ? 'doctor' : 'dashboard');
+const roleOf = (u) => (u?.role === 'doctor' ? 'doctor' : 'patient');
 
 function loadSession() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
@@ -27,7 +26,6 @@ export default function App() {
   const [dashboard, setDashboard] = useState(fallbackDashboard);
   const [trends, setTrends] = useState(fallbackTrends);
   const [alerts, setAlerts] = useState(fallbackAlerts);
-  const [patients, setPatients] = useState([]);
   const [selectedAssignment, setSelectedAssignment] = useState(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
@@ -37,35 +35,24 @@ export default function App() {
     api.health().then(setSystemStatus).catch(() => setSystemStatus({ database: 'offline' }));
   }, []);
 
-  // Patients see their own data; caregivers and doctors manage patients
+  // Patients see their own data; doctors manage patients
   const activeUserId = authUser?.role === 'patient' ? authUser.id : DEMO_USER_ID;
 
   const refresh = async () => {
     setLoading(true);
     try {
-      const promises = [
+      const [dash, trend, alertList] = await Promise.all([
         api.dashboard(activeUserId),
         api.trends(activeUserId),
         api.alerts(activeUserId),
-      ];
-
-      // Only query caregiver patients if the current user has the caregiver role
-      if (authUser?.role === 'caregiver') {
-        promises.push(api.caregiverPatients(authUser.id || DEMO_CAREGIVER_ID));
-      }
-
-      const results = await Promise.all(promises);
-      setDashboard(results[0]);
-      setTrends(results[1]);
-      setAlerts(results[2]);
-      if (results[3]) {
-        setPatients(results[3]);
-      }
+      ]);
+      setDashboard(dash);
+      setTrends(trend);
+      setAlerts(alertList);
     } catch {
       setDashboard(fallbackDashboard);
       setTrends(fallbackTrends);
       setAlerts(fallbackAlerts);
-      setPatients([]);
     } finally {
       setLoading(false);
     }
@@ -136,7 +123,7 @@ export default function App() {
     try {
       await api.demoDecline(activeUserId);
       await refresh();
-      setView(role === 'caregiver' ? 'caregiver' : 'dashboard');
+      setView(role === 'doctor' ? 'doctor' : 'dashboard');
       setToast('Decline scenario loaded: Day 15 → Day 21.');
     } catch {
       const decline = fallbackTrends.map((item, index) => index < 4 ? item : { ...item, score: 81 - index * 4, movement: 82 - index * 6, balance: 71 - index * 5 });
@@ -160,7 +147,6 @@ export default function App() {
     }
     if (view === 'progress') return <ProgressPage trends={trends} />;
     if (view === 'doctor') return <DoctorPage doctor={authUser} />;
-    if (view === 'caregiver') return <CaregiverPage trends={trends} patients={patients.length ? patients : undefined} onReview={() => setToast('Opening the trend evidence for review…')} />;
     if (view === 'settings') return <SettingsPage />;
     return (
       <PatientDashboard
@@ -175,7 +161,7 @@ export default function App() {
         }}
       />
     );
-  }, [view, dashboard, trends, alerts, patients, authUser, selectedAssignment]);
+  }, [view, dashboard, trends, alerts, authUser, selectedAssignment]);
 
   if (!authUser) return <LoginPage onLogin={handleLogin} />;
 
@@ -183,7 +169,7 @@ export default function App() {
     <div className="app-shell">
       <Sidebar view={view} setView={setView} role={role} userName={authUser.name} onDemoDecline={handleDemoDecline} />
       <main className="main-shell">
-        <Topbar role={role} userName={authUser.name} onLogout={handleLogout} systemStatus={systemStatus} setRole={(nextRole) => { if (authUser.role === 'doctor') return; setRole(nextRole); setView(homeView(nextRole)); }} />
+        <Topbar role={role} userName={authUser.name} onLogout={handleLogout} systemStatus={systemStatus} />
         <div className="content-shell">
           {loading && view === 'dashboard' && <div className="loading-bar"><LoaderCircle size={15} className="spin" /> Syncing recovery data…</div>}
           {content}
