@@ -1,8 +1,9 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const bcrypt = require('bcryptjs');
-const { users, assessments, patients, alerts, credentials, assignments } = require('./store');
+const { users, assessments, patients, alerts, credentials, assignments, doctors, availabilities } = require('./store');
 const { buildDashboard, buildTrend, createAlert } = require('./trendEngine');
 const { generateToken, authenticateToken, requireRole, requireSelfOrDoctor } = require('./middleware/auth');
 const { generateExplanation } = require('./services/geminiService');
@@ -11,18 +12,33 @@ const User = require('./models/User');
 const Assessment = require('./models/Assessment');
 const Alert = require('./models/Alert');
 const Assignment = require('./models/Assignment');
+const Doctor = require('./models/Doctor');
+const DoctorAvailability = require('./models/DoctorAvailability');
+
+const doctorRoutes = require('./routes/doctorRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
+const caregiverRoutes = require('./routes/caregiverRoutes');
+const { seedDatabaseIfEmpty } = require('./services/seedService');
 
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
 
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false,
+}));
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: '256kb' }));
 
 // Initialize MongoDB connection if running as main server
 if (require.main === module) {
-  connectDB().catch((err) => {
-    console.warn(`[Database] Initialization error: ${err.message}`);
-  });
+  connectDB()
+    .then(() => seedDatabaseIfEmpty())
+    .catch((err) => {
+      console.warn(`[Database] Initialization error: ${err.message}`);
+    });
 }
 
 // Health check endpoint
@@ -84,7 +100,18 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/signup', async (req, res) => {
-  const { name = '', email = '', password = '', role = 'patient' } = req.body || {};
+  const {
+    name = '',
+    email = '',
+    password = '',
+    role = 'patient',
+    specialization = 'Neurology',
+    qualifications,
+    experienceYears,
+    consultationFee,
+    bio,
+    clinic,
+  } = req.body || {};
   const cleanName = String(name).trim();
   const cleanEmail = String(email).trim().toLowerCase();
 
@@ -95,8 +122,8 @@ app.post('/api/auth/signup', async (req, res) => {
   if (String(password).length < 8) {
     return res.status(400).json({ message: 'Password must be at least 8 characters' });
   }
-  if (!['patient', 'doctor'].includes(role)) {
-    return res.status(400).json({ message: 'Role must be patient or doctor' });
+  if (!['patient', 'doctor', 'caregiver'].includes(role)) {
+    return res.status(400).json({ message: 'Role must be patient, doctor, or caregiver' });
   }
 
   if (credentials.some((c) => c.email === cleanEmail)) {
@@ -106,9 +133,13 @@ app.post('/api/auth/signup', async (req, res) => {
   const id = `${role === 'patient' ? 'user' : role}-${Date.now().toString(36)}`;
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const user = role !== 'patient'
-    ? { id, name: cleanName, role }
-    : { id, name: cleanName, role, preferredLanguage: 'English', doctorId: 'doctor-priya' };
+  const formattedName = role === 'doctor' && !cleanName.startsWith('Dr.') ? `Dr. ${cleanName}` : cleanName;
+
+  const user = role === 'patient'
+    ? { id, name: cleanName, role, preferredLanguage: 'English', doctorId: 'doctor-priya', authorizedCaregivers: [] }
+    : role === 'caregiver'
+      ? { id, name: cleanName, role, caregiverPatients: ['user-raj'] }
+      : { id, name: formattedName, role, specialty: specialization || 'Neurology' };
 
   users[id] = user;
   credentials.push({ email: cleanEmail, passwordHash, userId: id });
@@ -117,17 +148,74 @@ app.post('/api/auth/signup', async (req, res) => {
     patients.push({ id, name: cleanName, status: 'stable', score: 0, change: 0, lastCheck: 'No checks yet', doctorId: 'doctor-priya' });
   }
 
+  let doctorRecord = null;
+  let availRecord = null;
+  if (role === 'doctor') {
+    const docId = `doc-${id.replace(/^doctor-/, '')}`;
+    const validSpecialization = [
+      'Neurology',
+      'Physical Medicine and Rehabilitation',
+      'Physiotherapy',
+      'Occupational Therapy',
+      'Speech and Language Therapy',
+      'Neurorehabilitation',
+    ].includes(specialization) ? specialization : 'Neurology';
+
+    doctorRecord = {
+      id: docId,
+      userId: id,
+      name: formattedName,
+      specialization: validSpecialization,
+      qualifications: Array.isArray(qualifications) && qualifications.length > 0 ? qualifications : ['MBBS', 'MD - Neurology'],
+      experienceYears: Number(experienceYears) || 7,
+      consultationFee: Number(consultationFee) || 1000,
+      bio: bio ? String(bio).trim() : 'Specialist in post-stroke recovery, neurological rehabilitation, and clinical motor assessments.',
+      clinic: {
+        name: clinic?.name || `${cleanName.replace(/^Dr\.?\s*/, '')}'s Neuro Recovery Clinic`,
+        address: clinic?.address || 'Plot 18, Medical District, Near Metro',
+        city: clinic?.city || 'Mumbai',
+        roomNumber: clinic?.roomNumber || 'Suite 101',
+        phone: clinic?.phone || '+91 22 2600 4455',
+      },
+      rating: 4.8,
+      isActive: true,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    availRecord = {
+      id: `avail-${docId}`,
+      doctorId: docId,
+      workingDays: [1, 2, 3, 4, 5],
+      dayStartTime: '09:00',
+      dayEndTime: '17:00',
+      slotDurationMinutes: 30,
+      breakStartTime: '13:00',
+      breakEndTime: '14:00',
+      unavailableDates: [],
+      blockedSlots: [],
+    };
+
+    doctors.push(doctorRecord);
+    availabilities.push(availRecord);
+  }
+
   // Persist to MongoDB if connected
   if (isMongoConnected()) {
     User.create({
       id,
-      name: cleanName,
+      name: formattedName,
       email: cleanEmail,
       passwordHash,
       role,
       preferredLanguage: user.preferredLanguage,
       doctorId: user.doctorId,
     }).catch((err) => console.warn(`[Database] Failed to persist user: ${err.message}`));
+
+    if (doctorRecord && availRecord) {
+      Doctor.create(doctorRecord).catch((err) => console.warn(`[Database] Failed to persist doctor profile: ${err.message}`));
+      DoctorAvailability.create(availRecord).catch((err) => console.warn(`[Database] Failed to persist doctor availability: ${err.message}`));
+    }
   }
 
   const token = generateToken({
@@ -719,6 +807,13 @@ app.post('/api/explanation', async (req, res) => {
 
 // Expose sanitizeFindings for unit testing
 app._sanitizeFindings = sanitizeFindings;
+
+// Mount Doctor Appointments & Related Feature Routers
+app.use('/api/doctors', doctorRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/caregivers', caregiverRoutes);
 
 app.use((req, res) => res.status(404).json({ message: 'Route not found' }));
 

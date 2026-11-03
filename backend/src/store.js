@@ -24,10 +24,65 @@ const assessments = days.map(([date, score, movement, balance, coordination, spe
 }));
 
 const users = {
-  'user-raj': { id: 'user-raj', name: 'Raj Kumar', age: 58, role: 'patient', preferredLanguage: 'English', doctorId: 'doctor-priya' },
-  'user-anita': { id: 'user-anita', name: 'Anita Sharma', age: 63, role: 'patient', preferredLanguage: 'English', doctorId: 'doctor-priya' },
-  'user-mohan': { id: 'user-mohan', name: 'Mohan Singh', age: 66, role: 'patient', preferredLanguage: 'English', doctorId: 'doctor-priya' },
-  'doctor-priya': { id: 'doctor-priya', name: 'Dr. Priya Nair', role: 'doctor', specialty: 'Neurorehabilitation' },
+  'user-raj': {
+    id: 'user-raj',
+    name: 'Raj Kumar',
+    age: 58,
+    role: 'patient',
+    preferredLanguage: 'English',
+    doctorId: 'doctor-priya',
+    authorizedCaregivers: ['caregiver-anita'],
+  },
+  'user-anita': {
+    id: 'user-anita',
+    name: 'Anita Sharma',
+    age: 63,
+    role: 'patient',
+    preferredLanguage: 'English',
+    doctorId: 'doctor-priya',
+    authorizedCaregivers: [],
+  },
+  'caregiver-anita': {
+    id: 'caregiver-anita',
+    name: 'Anita Sharma (Caregiver)',
+    age: 52,
+    role: 'caregiver',
+    preferredLanguage: 'English',
+    caregiverPatients: ['user-raj'],
+  },
+  'user-mohan': {
+    id: 'user-mohan',
+    name: 'Mohan Singh',
+    age: 66,
+    role: 'patient',
+    preferredLanguage: 'English',
+    doctorId: 'doctor-priya',
+    authorizedCaregivers: [],
+  },
+  'doctor-priya': {
+    id: 'doctor-priya',
+    name: 'Dr. Priya Nair',
+    role: 'doctor',
+    specialty: 'Neurorehabilitation',
+  },
+  'doctor-vikram': {
+    id: 'doctor-vikram',
+    name: 'Dr. Vikram Rao',
+    role: 'doctor',
+    specialty: 'Neurology',
+  },
+  'doctor-sunita': {
+    id: 'doctor-sunita',
+    name: 'Dr. Sunita Menon',
+    role: 'doctor',
+    specialty: 'Physical Medicine and Rehabilitation',
+  },
+  'doctor-arvind': {
+    id: 'doctor-arvind',
+    name: 'Dr. Arvind Patel',
+    role: 'doctor',
+    specialty: 'Physiotherapy',
+  },
 };
 
 const patients = [
@@ -62,7 +117,126 @@ const assignments = [
 // Seed accounts with secure bcrypt-hashed passwords
 const credentials = [
   { email: 'raj@neuroguard.demo', passwordHash: bcrypt.hashSync('patient123', 10), userId: 'user-raj' },
+  { email: 'anita@neuroguard.demo', passwordHash: bcrypt.hashSync('caregiver123', 10), userId: 'caregiver-anita' },
   { email: 'priya@neuroguard.demo', passwordHash: bcrypt.hashSync('doctor123', 10), userId: 'doctor-priya' },
+  { email: 'vikram@neuroguard.demo', passwordHash: bcrypt.hashSync('doctor123', 10), userId: 'doctor-vikram' },
+  { email: 'sunita@neuroguard.demo', passwordHash: bcrypt.hashSync('doctor123', 10), userId: 'doctor-sunita' },
+  { email: 'arvind@neuroguard.demo', passwordHash: bcrypt.hashSync('doctor123', 10), userId: 'doctor-arvind' },
 ];
 
-module.exports = { users, assessments, patients, alerts, credentials, assignments };
+// Doctors catalog
+const doctors = [
+  {
+    id: 'doc-priya',
+    userId: 'doctor-priya',
+    name: 'Dr. Priya Nair',
+    specialization: 'Neurorehabilitation',
+    qualifications: ['MBBS', 'MD - Physical Medicine & Rehab', 'Fellowship in Neurorehabilitation'],
+    experienceYears: 14,
+    consultationFee: 1200,
+    bio: 'Specialist in post-stroke motor recovery, hemiplegic arm rehabilitation, and evidence-based neuroplasticity protocols.',
+    clinic: {
+      name: 'Apex Neurorehabilitation Center',
+      address: 'Plot 42, Hill Road, Bandra West',
+      city: 'Mumbai',
+      roomNumber: 'OPD Suite 204',
+      phone: '+91 22 2640 1199',
+    },
+    rating: 4.9,
+    isActive: true,
+  },
+  {
+    id: 'doc-vikram',
+    userId: 'doctor-vikram',
+    name: 'Dr. Vikram Rao',
+    specialization: 'Neurology',
+    qualifications: ['MBBS', 'DM - Neurology', 'FINR'],
+    experienceYears: 18,
+    consultationFee: 1500,
+    bio: 'Consultant Neurologist focusing on acute stroke management, cerebrovascular disorders, and spasticity interventions.',
+    clinic: {
+      name: 'Metro Brain & Spine Institute',
+      address: 'Central Avenue, Near Metro Station, Andheri East',
+      city: 'Mumbai',
+      roomNumber: 'Clinic 12B',
+      phone: '+91 22 2835 4400',
+    },
+    rating: 4.8,
+    isActive: true,
+  },
+  {
+    id: 'doc-sunita',
+    userId: 'doctor-sunita',
+    name: 'Dr. Sunita Menon',
+    specialization: 'Physical Medicine and Rehabilitation',
+    qualifications: ['MBBS', 'DNB - PMR', 'Certified Stroke Rehab Specialist'],
+    experienceYears: 11,
+    consultationFee: 900,
+    bio: 'Dedicated to functional independence restoration, balance training, gait re-education, and musculoskeletal coordination.',
+    clinic: {
+      name: 'Horizon Rehabilitation & Mobility Clinic',
+      address: 'Hiranandani Business Park, Powai',
+      city: 'Mumbai',
+      roomNumber: 'Ground Floor, Suite G-03',
+      phone: '+91 22 2570 8822',
+    },
+    rating: 4.7,
+    isActive: true,
+  },
+  {
+    id: 'doc-arvind',
+    userId: 'doctor-arvind',
+    name: 'Dr. Arvind Patel',
+    specialization: 'Physiotherapy',
+    qualifications: ['BPT', 'MPT - Neurological Sciences', 'MIAP'],
+    experienceYears: 9,
+    consultationFee: 800,
+    bio: 'Clinical neuro-physiotherapist specializing in upper-limb coordination, sit-to-stand transitions, and kinematic re-training.',
+    clinic: {
+      name: 'CareWave Neuro Recovery Care',
+      address: 'Senapati Bapat Marg, Dadar West',
+      city: 'Mumbai',
+      roomNumber: 'Rehab Wing, Level 1',
+      phone: '+91 22 2430 7711',
+    },
+    rating: 4.9,
+    isActive: true,
+  },
+];
+
+// Doctor availabilities
+const availabilities = doctors.map((doc) => ({
+  id: `avail-${doc.id}`,
+  doctorId: doc.id,
+  workingDays: [1, 2, 3, 4, 5], // Monday through Friday
+  dayStartTime: '09:00',
+  dayEndTime: '17:00',
+  slotDurationMinutes: 30,
+  breakStartTime: '13:00',
+  breakEndTime: '14:00',
+  unavailableDates: [],
+  blockedSlots: [],
+}));
+
+// In-memory appointments store
+const appointments = [];
+
+// In-memory shared recovery reports store
+const sharedReports = [];
+
+// In-memory notifications store
+const notifications = [];
+
+module.exports = {
+  users,
+  assessments,
+  patients,
+  alerts,
+  credentials,
+  assignments,
+  doctors,
+  availabilities,
+  appointments,
+  sharedReports,
+  notifications,
+};

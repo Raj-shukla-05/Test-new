@@ -9,12 +9,14 @@ import AssessmentPage from './pages/AssessmentPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import DoctorPage from './pages/DoctorPage';
+import AppointmentsPage from './pages/AppointmentsPage';
+import DoctorAppointmentsPage from './pages/DoctorAppointmentsPage';
 import { api } from './lib/api';
 import { DEMO_USER_ID, fallbackAlerts, fallbackDashboard, fallbackTrends } from './lib/demoData';
 
 const SESSION_KEY = 'neuroguard.user';
 const homeView = (r) => (r === 'doctor' ? 'doctor' : 'dashboard');
-const roleOf = (u) => (u?.role === 'doctor' ? 'doctor' : 'patient');
+const roleOf = (u) => (u?.role === 'doctor' ? 'doctor' : u?.role === 'caregiver' ? 'caregiver' : 'patient');
 
 function loadSession() {
   try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
@@ -148,6 +150,11 @@ export default function App() {
     }
     if (view === 'progress') return role === 'doctor' ? <DoctorProgressPage doctor={authUser} /> : <ProgressPage trends={trends} />;
     if (view === 'doctor') return <DoctorPage doctor={authUser} />;
+    if (view === 'appointments') {
+      return role === 'doctor'
+        ? <DoctorAppointmentsPage doctor={authUser} onToast={setToast} />
+        : <AppointmentsPage user={authUser} onToast={setToast} />;
+    }
     if (view === 'settings') return <SettingsPage />;
     return (
       <PatientDashboard

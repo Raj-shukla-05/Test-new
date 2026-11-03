@@ -76,4 +76,51 @@ export const api = {
   explanation: (payload) => request('/explanation', { method: 'POST', body: JSON.stringify(payload) }),
   speechAnalyze: (payload) => request('/speech/analyze', { method: 'POST', body: JSON.stringify(payload) }),
   demoDecline: (userId) => request(`/users/${userId}/demo-decline`, { method: 'POST' }),
+
+  // --- Doctor Discovery & Profile APIs ---
+  doctors: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.search) q.set('search', params.search);
+    if (params.specialization) q.set('specialization', params.specialization);
+    if (params.city) q.set('city', params.city);
+    const queryString = q.toString();
+    return request(`/doctors${queryString ? `?${queryString}` : ''}`);
+  },
+  doctor: (doctorId) => request(`/doctors/${doctorId}`),
+  doctorAvailability: (doctorId, date) => request(`/doctors/${doctorId}/availability?date=${date}`),
+  updateDoctorProfile: (payload) => request('/doctors/profile', { method: 'PATCH', body: JSON.stringify(payload) }),
+  updateDoctorAvailability: (payload) => request('/doctors/availability', { method: 'PUT', body: JSON.stringify(payload) }),
+  blockDoctorSlot: (payload) => request('/doctors/availability/block', { method: 'POST', body: JSON.stringify(payload) }),
+  unblockDoctorSlot: (blockId) => request(`/doctors/availability/block/${blockId}`, { method: 'DELETE' }),
+
+  // --- Appointments APIs ---
+  bookAppointment: (payload) => request('/appointments', { method: 'POST', body: JSON.stringify(payload) }),
+  myAppointments: () => request('/appointments/my'),
+  doctorAppointments: () => request('/appointments/doctor'),
+  appointment: (appointmentId) => request(`/appointments/${appointmentId}`),
+  confirmAppointment: (appointmentId) => request(`/appointments/${appointmentId}/confirm`, { method: 'PATCH' }),
+  rejectAppointment: (appointmentId, reason) =>
+    request(`/appointments/${appointmentId}/reject`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+  cancelAppointment: (appointmentId, reason) =>
+    request(`/appointments/${appointmentId}/cancel`, { method: 'PATCH', body: JSON.stringify({ reason }) }),
+  rescheduleAppointment: (appointmentId, payload) =>
+    request(`/appointments/${appointmentId}/reschedule`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  completeAppointment: (appointmentId) => request(`/appointments/${appointmentId}/complete`, { method: 'PATCH' }),
+  noShowAppointment: (appointmentId) => request(`/appointments/${appointmentId}/no-show`, { method: 'PATCH' }),
+
+  // --- Recovery Report Sharing APIs ---
+  previewReport: (patientId) => request(`/reports/preview${patientId ? `?patientId=${patientId}` : ''}`),
+  shareReport: (payload) => request('/reports/share', { method: 'POST', body: JSON.stringify(payload) }),
+  sharedReportsWithMe: () => request('/reports/shared-with-me'),
+  mySharedReports: () => request('/reports/my-shares'),
+  sharedReport: (shareId) => request(`/reports/shared/${shareId}`),
+  revokeReport: (shareId) => request(`/reports/shares/${shareId}`, { method: 'DELETE' }),
+
+  // --- Notifications APIs ---
+  notifications: () => request('/notifications'),
+  markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: 'PATCH' }),
+  markAllNotificationsRead: () => request('/notifications/read-all', { method: 'POST' }),
+
+  // --- Caregiver APIs ---
+  caregiverPatients: (caregiverId) => request(`/caregivers/${caregiverId}/patients`),
 };
