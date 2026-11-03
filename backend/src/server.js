@@ -95,8 +95,8 @@ app.post('/api/auth/signup', async (req, res) => {
   if (String(password).length < 8) {
     return res.status(400).json({ message: 'Password must be at least 8 characters' });
   }
-  if (!['patient', 'caregiver', 'doctor'].includes(role)) {
-    return res.status(400).json({ message: 'Role must be patient, doctor or caregiver' });
+  if (!['patient', 'doctor'].includes(role)) {
+    return res.status(400).json({ message: 'Role must be patient or doctor' });
   }
 
   if (credentials.some((c) => c.email === cleanEmail)) {
@@ -108,7 +108,7 @@ app.post('/api/auth/signup', async (req, res) => {
 
   const user = role !== 'patient'
     ? { id, name: cleanName, role }
-    : { id, name: cleanName, role, preferredLanguage: 'English', caregiverId: 'caregiver-anita', doctorId: 'doctor-priya' };
+    : { id, name: cleanName, role, preferredLanguage: 'English', doctorId: 'doctor-priya' };
 
   users[id] = user;
   credentials.push({ email: cleanEmail, passwordHash, userId: id });
@@ -126,7 +126,6 @@ app.post('/api/auth/signup', async (req, res) => {
       passwordHash,
       role,
       preferredLanguage: user.preferredLanguage,
-      caregiverId: user.caregiverId,
       doctorId: user.doctorId,
     }).catch((err) => console.warn(`[Database] Failed to persist user: ${err.message}`));
   }
@@ -172,14 +171,7 @@ app.get('/api/alerts/:id', authenticateToken, requireSelfOrDoctor, (req, res) =>
   return res.json(seeded.slice(0, 3));
 });
 
-// --- Role-Specific Clinical & Caregiver Oversight Endpoints ---
-
-app.get('/api/caregivers/:id/patients', authenticateToken, requireRole('caregiver', 'doctor'), (req, res) => {
-  if (!users[req.params.id] || users[req.params.id].role !== 'caregiver') {
-    return res.status(404).json({ message: 'Caregiver not found' });
-  }
-  res.json(patients);
-});
+// --- Role-Specific Clinical Oversight Endpoints ---
 
 app.get('/api/doctors/:id/patients', authenticateToken, requireRole('doctor'), (req, res) => {
   if (req.user.userId !== req.params.id) {

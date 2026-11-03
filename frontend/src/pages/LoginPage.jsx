@@ -5,7 +5,6 @@ import { api } from '../lib/api';
 
 const DEMO_ACCOUNTS = [
   { label: 'Patient — Raj Kumar', email: 'raj@neuroguard.demo', password: 'patient123' },
-  { label: 'Caregiver — Anita Sharma', email: 'anita@neuroguard.demo', password: 'caregiver123' },
   { label: 'Doctor — Dr. Priya Nair', email: 'priya@neuroguard.demo', password: 'doctor123' },
 ];
 
@@ -22,12 +21,18 @@ export default function LoginPage({ onLogin }) {
 
   const switchMode = (next) => { setMode(next); setError(''); setPassword(''); setConfirm(''); };
 
-  const submit = async (e, creds) => {
-    e?.preventDefault();
-    const mail = creds?.email ?? email;
-    const pass = creds?.password ?? password;
+  const fillDemo = (account) => {
+    setEmail(account.email);
+    setPassword(account.password);
+    setError('');
+  };
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const mail = email;
+    const pass = password;
     if (!mail.trim() || !pass) { setError('Enter your email and password.'); return; }
-    if (signup && !creds) {
+    if (signup) {
       if (!name.trim()) { setError('Enter your full name.'); return; }
       if (pass.length < 8) { setError('Password must be at least 8 characters.'); return; }
       if (pass !== confirm) { setError('Passwords do not match.'); return; }
@@ -35,7 +40,7 @@ export default function LoginPage({ onLogin }) {
     setBusy(true);
     setError('');
     try {
-      const { user, token } = signup && !creds
+      const { user, token } = signup
         ? await api.signup({ name: name.trim(), email: mail, password: pass, role })
         : await api.login(mail, pass);
       onLogin(user, token);
@@ -56,9 +61,9 @@ export default function LoginPage({ onLogin }) {
         {signup && (
           <>
             <div className="role-toggle" role="radiogroup" aria-label="Account type">
-              {['patient', 'caregiver', 'doctor'].map((r) => (
+              {['patient', 'doctor'].map((r) => (
                 <button key={r} type="button" role="radio" aria-checked={role === r} className={role === r ? 'active' : ''} onClick={() => setRole(r)}>
-                  {r === 'patient' ? 'Patient' : r === 'caregiver' ? 'Caregiver' : 'Doctor'}
+                  {r === 'patient' ? 'Patient' : 'Doctor'}
                 </button>
               ))}
             </div>
@@ -90,7 +95,7 @@ export default function LoginPage({ onLogin }) {
           <div className="login-demo">
             <span>Demo accounts</span>
             {DEMO_ACCOUNTS.map((a) => (
-              <button key={a.email} type="button" className="secondary" disabled={busy} onClick={() => submit(null, a)}>{a.label}</button>
+              <button key={a.email} type="button" className="secondary" disabled={busy} onClick={() => fillDemo(a)}>{a.label}</button>
             ))}
           </div>
         )}
