@@ -12,6 +12,8 @@ AI-powered home recovery & functional monitoring for stroke survivors.
 - Doctor dashboard with Stable / Monitor / Review Recommended states
 - Explainable alerts based on deterministic trend logic
 - Seeded Day 1 → Day 21 demo scenario so the hackathon presentation is reliable
+- Doctor Appointment Management System: verified in-person clinical consultations, atomic slot reservations, doctor availability controls, and patient-authorized Recovery Report sharing (see [DOCTOR_APPOINTMENT_ARCHITECTURE.md](DOCTOR_APPOINTMENT_ARCHITECTURE.md))
+- In-app notification center for real-time booking updates and report sharing alerts
 - Optional speech assessment metrics (browser Speech Recognition when supported)
 - Optional OpenAI explanation endpoint; local deterministic explanation is always available as fallback
 - No raw video upload or persistence

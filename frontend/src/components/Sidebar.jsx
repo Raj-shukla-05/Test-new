@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Activity, Bell, HeartPulse, LayoutDashboard, LineChart, Settings, ShieldCheck,
+  Activity, Bell, Calendar, HeartPulse, LayoutDashboard, LineChart, Settings, ShieldCheck,
   Stethoscope, UserRound, UsersRound, Video,
 } from 'lucide-react';
 import { Logo } from './Logo';
@@ -10,12 +10,20 @@ export default function Sidebar({ view, setView, role, userName, onDemoDecline }
     { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'assessment', label: 'Today’s Check', icon: Video },
     { id: 'progress', label: 'My Progress', icon: LineChart },
+    { id: 'appointments', label: 'Doctor Appointments', icon: Calendar },
   ];
   const doctorItems = [
     { id: 'doctor', label: 'All patients', icon: UsersRound },
     { id: 'progress', label: 'Patient Progress', icon: LineChart },
+    { id: 'appointments', label: 'Clinic Appointments', icon: Calendar },
   ];
-  const items = role === 'doctor' ? doctorItems : patientItems;
+  const caregiverItems = [
+    { id: 'dashboard', label: 'Patient Overview', icon: LayoutDashboard },
+    { id: 'progress', label: 'Recovery Progress', icon: LineChart },
+    { id: 'appointments', label: 'Doctor Appointments', icon: Calendar },
+  ];
+
+  const items = role === 'doctor' ? doctorItems : role === 'caregiver' ? caregiverItems : patientItems;
 
   return (
     <aside className="sidebar">
@@ -35,10 +43,13 @@ export default function Sidebar({ view, setView, role, userName, onDemoDecline }
         <div><strong>Privacy first</strong><span>Camera frames stay on device.</span></div>
       </div>
       <button className="nav-item" onClick={() => setView('settings')}><Settings size={19} /><span>Settings</span></button>
-      {role !== 'doctor' && <button className="demo-link" onClick={onDemoDecline}><Activity size={16} /> Load decline demo</button>}
+      {role === 'patient' && <button className="demo-link" onClick={onDemoDecline}><Activity size={16} /> Load decline demo</button>}
       <div className="sidebar-footer">
         <div className="avatar">{(userName || 'U').replace(/^Dr\.?\s*/, '').charAt(0).toUpperCase()}</div>
-        <div><strong>{userName || 'Raj Kumar'}</strong><span>{role === 'doctor' ? 'Doctor account' : 'Patient account'}</span></div>
+        <div>
+          <strong>{userName || 'Raj Kumar'}</strong>
+          <span>{role === 'doctor' ? 'Doctor account' : role === 'caregiver' ? 'Caregiver account' : 'Patient account'}</span>
+        </div>
         <Stethoscope size={16} />
       </div>
     </aside>
