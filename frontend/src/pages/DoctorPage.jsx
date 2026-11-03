@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle, ArrowDownRight, ArrowUpRight, CheckCircle2, LoaderCircle,
+  Activity, AlertCircle, ArrowDownRight, ArrowUpRight, CheckCircle2, LoaderCircle,
   Search, UsersRound, Sparkles, ShieldCheck, PlusCircle, Calendar,
   Clock, Check, X, FileText, Send, Ban
 } from 'lucide-react';
@@ -31,14 +31,12 @@ export default function DoctorPage({ doctor }) {
   const [filter, setFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    api.doctorPatients(doctor.id)
-      .then((list) => { if (!cancelled) setPatients(list); })
-      .catch(() => { if (!cancelled) setError('Could not load patients. Make sure the backend is running.'); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [doctor.id]);
+  const loadPatients = () => api.doctorPatients(doctor.id)
+    .then(setPatients)
+    .catch(() => setError('Could not load patients. Make sure the backend is running.'))
+    .finally(() => setLoading(false));
+
+  useEffect(() => { loadPatients(); }, [doctor.id]);
 
   const counts = useMemo(() => ({
     all: patients.length,
@@ -71,7 +69,7 @@ export default function DoctorPage({ doctor }) {
         <div className="summary-tile monitor"><AlertCircle size={18} /><div><strong>{counts.monitor}</strong><span>Monitor</span></div></div>
         <div className="summary-tile stable"><CheckCircle2 size={18} /><div><strong>{counts.stable}</strong><span>Stable</span></div></div>
       </section>
-      <div className="caregiver-layout">
+      <div className="detail-layout">
         <section className="card wide">
           <div className="card-head"><div><span className="eyebrow">Patient list</span><h3>All patients</h3></div></div>
           <div className="doctor-toolbar">
@@ -100,13 +98,13 @@ export default function DoctorPage({ doctor }) {
             })}
           </div>
         </section>
-        <PatientDetail patient={selected} />
+        <PatientDetail patient={selected} onDemoLoaded={loadPatients} />
       </div>
     </div>
   );
 }
 
-function PatientDetail({ patient }) {
+function PatientDetail({ patient, onDemoLoaded }) {
   const [trends, setTrends] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [assignments, setAssignments] = useState([]);
@@ -196,6 +194,18 @@ function PatientDetail({ patient }) {
     setReviewingId(null);
     loadPatientData();
   }, [patient?.id]);
+
+  const handleDemoDecline = async () => {
+    setBusy(true);
+    try {
+      await api.demoDecline(patient.id);
+      await onDemoLoaded?.();
+      loadPatientData();
+    } catch (err) {
+      alert(err.message || 'Failed to load decline demo');
+      setBusy(false);
+    }
+  };
 
   const handleExerciseChange = (type) => {
     setExerciseType(type);
@@ -288,6 +298,9 @@ function PatientDetail({ patient }) {
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
           {busy && <LoaderCircle size={16} className="spin" />}
+          <button className="secondary" style={{ fontSize: '0.825rem', padding: '0.4rem 0.75rem' }} onClick={handleDemoDecline} disabled={busy}>
+            <Activity size={15} /> Load decline demo
+          </button>
           <button
             className="primary"
             style={{ fontSize: '0.825rem', padding: '0.4rem 0.75rem' }}

@@ -1,5 +1,4 @@
 export const DEMO_USER_ID = 'user-raj';
-export const DEMO_CAREGIVER_ID = 'caregiver-anita';
 
 export const fallbackDashboard = {
   user: {

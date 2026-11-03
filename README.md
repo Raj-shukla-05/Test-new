@@ -9,7 +9,7 @@ AI-powered home recovery & functional monitoring for stroke survivors.
 - Live Arm Raise exercise with skeleton overlay, ROM, symmetry, control and rep counting
 - Sit-to-Stand and Seated Reach exercises using the same pose pipeline
 - Personal baseline and longitudinal trend engine
-- Caregiver dashboard with Stable / Monitor / Review Recommended states
+- Doctor dashboard with Stable / Monitor / Review Recommended states
 - Explainable alerts based on deterministic trend logic
 - Seeded Day 1 → Day 21 demo scenario so the hackathon presentation is reliable
 - Optional speech assessment metrics (browser Speech Recognition when supported)
@@ -34,7 +34,7 @@ React client + MediaPipe
       |                       +--------------+--------------+
       |                       |                             |
       v                       v                             v
-Patient UI            MongoDB (optional)          Caregiver UI
+Patient UI            MongoDB (optional)          Doctor UI
                                              
 Structured findings --> optional LLM --> plain-language explanation
 ```
@@ -82,7 +82,6 @@ Leave MongoDB and OpenAI blank for a fully local hackathon demo. The server uses
 The UI is intentionally seeded for a presentation-ready flow:
 
 - Patient: Raj Kumar
-- Caregiver: Anita Sharma
 - Current functional performance: 79/100
 - Historical decline scenario can be enabled from the dashboard
 

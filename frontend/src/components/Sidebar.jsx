@@ -11,12 +11,11 @@ export default function Sidebar({ view, setView, role, userName, onDemoDecline }
     { id: 'assessment', label: 'Today’s Check', icon: Video },
     { id: 'progress', label: 'My Progress', icon: LineChart },
   ];
-  const caregiverItems = [
-    { id: 'caregiver', label: 'Patients', icon: UsersRound },
-    { id: 'progress', label: 'Trend View', icon: LineChart },
+  const doctorItems = [
+    { id: 'doctor', label: 'All patients', icon: UsersRound },
+    { id: 'progress', label: 'Patient Progress', icon: LineChart },
   ];
-  const doctorItems = [{ id: 'doctor', label: 'All patients', icon: UsersRound }];
-  const items = role === 'doctor' ? doctorItems : role === 'caregiver' ? caregiverItems : patientItems;
+  const items = role === 'doctor' ? doctorItems : patientItems;
 
   return (
     <aside className="sidebar">
@@ -39,7 +38,7 @@ export default function Sidebar({ view, setView, role, userName, onDemoDecline }
       {role !== 'doctor' && <button className="demo-link" onClick={onDemoDecline}><Activity size={16} /> Load decline demo</button>}
       <div className="sidebar-footer">
         <div className="avatar">{(userName || 'U').replace(/^Dr\.?\s*/, '').charAt(0).toUpperCase()}</div>
-        <div><strong>{userName || (role === 'caregiver' ? 'Anita Sharma' : 'Raj Kumar')}</strong><span>{role === 'doctor' ? 'Doctor account' : role === 'caregiver' ? 'Caregiver account' : 'Patient account'}</span></div>
+        <div><strong>{userName || 'Raj Kumar'}</strong><span>{role === 'doctor' ? 'Doctor account' : 'Patient account'}</span></div>
         <Stethoscope size={16} />
       </div>
     </aside>

@@ -40,7 +40,7 @@ function requireRole(...allowedRoles) {
 
 /**
  * Middleware ensuring a user can only access their own record,
- * unless they are an authorized doctor or caregiver with permissions.
+ * unless they are an authorized doctor.
  */
 function requireSelfOrDoctor(req, res, next) {
   if (!req.user) {
@@ -63,16 +63,6 @@ function requireSelfOrDoctor(req, res, next) {
     const patient = users[requestedUserId];
     if (patient && patient.doctorId && patient.doctorId !== req.user.userId) {
       return res.status(403).json({ message: 'Forbidden: patient is assigned to another clinician.' });
-    }
-    return next();
-  }
-
-  // Caregivers can view assigned patients
-  if (req.user.role === 'caregiver') {
-    const { users } = require('../store');
-    const patient = users[requestedUserId];
-    if (patient && patient.caregiverId && patient.caregiverId !== req.user.userId) {
-      return res.status(403).json({ message: 'Forbidden: patient is assigned to another caregiver.' });
     }
     return next();
   }

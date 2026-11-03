@@ -16,6 +16,6 @@
    ```
 4. Open `http://localhost:5173`.
 5. Test the patient flow: Overview → Today’s Check → Arm Raise → Start camera.
-6. Test the judge flow: click `Load decline demo` → switch profile to caregiver → Patients.
+6. Test the judge flow: click `Load decline demo` → sign in as the doctor → All patients → select a patient → Load decline demo.
 
 For the camera demo, use Chrome/Edge on localhost and allow camera access. Keep your whole upper body in frame for Arm Raise.

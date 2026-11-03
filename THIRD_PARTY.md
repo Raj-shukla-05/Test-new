@@ -36,4 +36,4 @@ MediaPipe Tasks Vision is a Google-provided computer-vision SDK used by this pro
 
 ## Project-specific implementation
 
-The NeuroGuard baseline engine, trend detector, API layer, demo scenario, patient/caregiver UX, safety rules and scoring integration are original implementation for this project.
+The NeuroGuard baseline engine, trend detector, API layer, demo scenario, patient/doctor UX, safety rules and scoring integration are original implementation for this project.
