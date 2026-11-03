@@ -13,7 +13,7 @@ export default function Sidebar({ view, setView, role, userName, onDemoDecline }
   ];
   const doctorItems = [
     { id: 'doctor', label: 'All patients', icon: UsersRound },
-    { id: 'progress', label: 'Trend View', icon: LineChart },
+    { id: 'progress', label: 'Patient Progress', icon: LineChart },
   ];
   const items = role === 'doctor' ? doctorItems : patientItems;
 

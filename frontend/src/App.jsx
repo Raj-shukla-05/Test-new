@@ -4,6 +4,7 @@ import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
 import PatientDashboard from './pages/PatientDashboard';
 import ProgressPage from './pages/ProgressPage';
+import DoctorProgressPage from './pages/DoctorProgressPage';
 import AssessmentPage from './pages/AssessmentPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
@@ -145,7 +146,7 @@ export default function App() {
         />
       );
     }
-    if (view === 'progress') return <ProgressPage trends={trends} />;
+    if (view === 'progress') return role === 'doctor' ? <DoctorProgressPage doctor={authUser} /> : <ProgressPage trends={trends} />;
     if (view === 'doctor') return <DoctorPage doctor={authUser} />;
     if (view === 'settings') return <SettingsPage />;
     return (
@@ -161,7 +162,7 @@ export default function App() {
         }}
       />
     );
-  }, [view, dashboard, trends, alerts, authUser, selectedAssignment]);
+  }, [view, role, dashboard, trends, alerts, authUser, selectedAssignment]);
 
   if (!authUser) return <LoginPage onLogin={handleLogin} />;
 
